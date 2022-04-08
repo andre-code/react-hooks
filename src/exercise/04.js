@@ -1,17 +1,55 @@
 // useState: tic tac toe
 // http://localhost:3000/isolated/exercise/04.js
 
-import * as React from 'react'
-import {useLocalStorageState} from '../utils'
+import * as React from 'react';
+import {useLocalStorageState} from '../utils';
 
-function Board() {
+function Board({ selectSquare, squares }) {
+  function renderSquare(i) {
+    return (
+      <button className="square" onClick={() => selectSquare(i)}>
+        {squares[i]}
+      </button>
+    )
+  }
+
+  return (
+    <div>
+      <div className="board-row">
+      {renderSquare(0)}
+      {renderSquare(1)}
+      {renderSquare(2)}
+    </div>
+      <div className="board-row">
+        {renderSquare(3)}
+        {renderSquare(4)}
+        {renderSquare(5)}
+      </div>
+      <div className="board-row">
+        {renderSquare(6)}
+        {renderSquare(7)}
+        {renderSquare(8)}
+      </div>
+    </div>
+  )
+}
+
+function Game() {
   // 🐨 squares is the state for this component. Add useState for squares
   const [squares, setSquares] = useLocalStorageState("game", Array(9).fill(null));
+  const [moves, setMoves] = useLocalStorageState("moves", [Array(9).fill(null)]);
+  const [currentMove, setCurrentMove] = useLocalStorageState("currentMove", 0);
 
   // 🐨 We'll need the following bits of derived state:
   const nextValue= calculateNextValue(squares);
   const winner = calculateWinner(squares);
   const status = calculateStatus(winner, squares, nextValue);
+
+  const addToHistory = (newadd) => {
+    const currentMoves = [ ...moves ];
+    currentMoves.push(newadd);
+    setMoves(currentMoves)
+  }
 
   function selectSquare(square) {
     // 🐨 first, if there's already winner or there's already a value at the
@@ -23,52 +61,44 @@ function Board() {
     const squaresCopy = [...squares];
     squaresCopy[square] = nextValue;
     setSquares(squaresCopy);
+    addToHistory(squaresCopy);
+    setCurrentMove(currentMove+1);
+  }
+
+  function selectMove (indexMove) {
+    setCurrentMove(indexMove);
+    setSquares(moves[indexMove]);
   }
 
   function restart() {
     const emptySquares = Array(9).fill(null)
     setSquares(emptySquares);
+    setMoves([emptySquares]);
+    setCurrentMove(0);
   }
 
-  function renderSquare(i) {
-    return (
-      <button className="square" onClick={() => selectSquare(i)}>
-        {squares[i]}
-      </button>
-    )
-  }
-
-  return (
-    <div>
-      {/* 🐨 put the status in the div below */}
-      <div className="status">{status}</div>
-      <div className="board-row">
-        {renderSquare(0)}
-        {renderSquare(1)}
-        {renderSquare(2)}
-      </div>
-      <div className="board-row">
-        {renderSquare(3)}
-        {renderSquare(4)}
-        {renderSquare(5)}
-      </div>
-      <div className="board-row">
-        {renderSquare(6)}
-        {renderSquare(7)}
-        {renderSquare(8)}
-      </div>
-      <button className="restart" onClick={restart}>
-        restart
-      </button>
-    </div>
-  )
-}
-
-function Game() {
   return (
     <div className="game">
       <div className="game-board">
-        <Board />
+        <Board selectSquare={selectSquare} squares={squares} />
+        <button className="restart" onClick={restart}>
+          restart
+        </button>
+      </div>
+      <div className="game-info">
+        <div className="status">{status}</div>
+        {
+          moves.map( (x, index ) => {
+            return (
+              <div key={index}>
+                {`${index}. `}
+                <button onClick={() => selectMove(index)} disabled={index === currentMove}>
+                  { index === 0 ? "Go to game start" : `Go to move #${index}` }
+                  {index === currentMove ? " (Current)" : ""}
+                </button>
+              </div> )
+          })
+        }
       </div>
     </div>
   )
@@ -77,7 +107,7 @@ function Game() {
 // eslint-disable-next-line no-unused-vars
 function calculateStatus(winner, squares, nextValue) {
   return winner
-    ? `Winner: ${winner}`
+    ? `Winner: ${winner} 🎉`
     : squares.every(Boolean)
     ? `Scratch: Cat's game`
     : `Next player: ${nextValue}`
